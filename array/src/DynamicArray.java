@@ -1,18 +1,18 @@
 import java.util.StringJoiner;
 
 /**
- * 封装自己的动态数组
+ * 封装自己的动态数组  支持随机访问
  *
  * @author gaohao
  * @date 2019/10/31 15:52
  * @desc
  */
-public class DynamicArray {
+public class DynamicArray<E> {
 
     /**
      * 数据存放
      */
-    private int[] data;
+    private E[] data;
 
     /**
      * 有效元素数
@@ -28,20 +28,7 @@ public class DynamicArray {
      * @date 2019/10/31 16:05
      */
     public DynamicArray(int capacity) {
-        data = new int[capacity];
-        size = 0;
-    }
-
-    /**
-     * 重写构造函数,初始化静态数组
-     *
-     * @param arr 静态数组
-     * @return
-     * @author gaohao
-     * @date 2019/10/31 16:06
-     */
-    public DynamicArray(int[] arr) {
-        data = arr;
+        data = (E[]) new Object[capacity];
         size = 0;
     }
 
@@ -94,26 +81,26 @@ public class DynamicArray {
     }
 
     /**
-     * 在所有元素后添加一个新元素
+     * 在所有元素后添加一个新元素 O(1)
      *
      * @param e 插入元素
      * @return
      * @author gaohao
      * @date 2019/10/31 16:23
      */
-    public void addLast(int e) {
+    public void addLast(E e) {
         add(size, e);
     }
 
     /**
-     * 在所有元素前添加一个新元素
+     * 在所有元素前添加一个新元素 O(n)
      *
      * @param e 插入元素
      * @return
      * @author gaohao
      * @date 2019/10/31 17:04
      */
-    public void addFirst(int e) {
+    public void addFirst(E e) {
         add(0, e);
     }
 
@@ -126,12 +113,12 @@ public class DynamicArray {
      * @author gaohao
      * @date 2019/10/31 16:46
      */
-    public void add(int index, int e) {
-        if (size == data.length) {
-            throw new IllegalArgumentException("数组已满");
-        }
+    public void add(int index, E e) {
         if (index < 0 || index > size) {
             throw new IllegalArgumentException("数组下标非法");
+        }
+        if (size == data.length) {
+            resize(data.length * 2);
         }
         for (int i = size - 1; i >= index; i--) {
             data[i + 1] = data[i];
@@ -143,30 +130,27 @@ public class DynamicArray {
     /**
      * 获取index索引位置的元素,保证未使用数组的数据安全
      *
-     * @param
+     * @param index 索引位置
      * @return
      * @author gaohao
      * @date 2019/10/31 17:28
      */
-    public int get(int index) {
-        if (index < 0 || index >= size) {
-            throw new IllegalArgumentException("数组下标非法");
-        }
+    public E get(int index) {
+        verify(index);
         return data[index];
     }
 
     /**
      * 修改index索引位置的元素为e
      *
-     * @param
+     * @param index 索引位置
+     * @param e     修改元素
      * @return
      * @author gaohao
      * @date 2019/10/31 17:41
      */
-    public void set(int index, int e) {
-        if (index < 0 || index >= size) {
-            throw new IllegalArgumentException("数组下标非法");
-        }
+    public void set(int index, E e) {
+        verify(index);
         data[index] = e;
     }
 
@@ -178,9 +162,9 @@ public class DynamicArray {
      * @author gaohao
      * @date 2019/10/31 17:48
      */
-    public boolean contains(int e) {
+    public boolean contains(E e) {
         for (int i = 0; i < size; i++) {
-            if (data[i] == e) {
+            if (data[i].equals(e)) {
                 return true;
             }
         }
@@ -190,21 +174,19 @@ public class DynamicArray {
     /**
      * 查找数组中元素e所在的索引,如果不存在,则返回-1
      *
-     * @param
+     * @param e 查找元素
      * @return
      * @author gaohao
      * @date 2019/10/31 17:51
      */
-    public int findIndex(int e) {
+    public int findIndex(E e) {
         for (int i = 0; i < size; i++) {
-            if (data[i] == e) {
+            if (data[i].equals(e)) {
                 return i;
             }
         }
         return -1;
     }
-
-    public int findAllIndex(int e) {}
 
     /**
      * 从数组中删除索引index的元素,并返回删除的元素值
@@ -214,15 +196,17 @@ public class DynamicArray {
      * @author gaohao
      * @date 2019/10/31 18:09
      */
-    public int remove(int index) {
-        if (index < 0 || index >= size) {
-            throw new IllegalArgumentException("数组下标非法");
-        }
-        int ret = data[index];
+    public E remove(int index) {
+        verify(index);
+        E ret = data[index];
         for (int i = index + 1; i < size; i++) {
             data[i - 1] = data[i];
         }
         size--;
+        data[size] = null;
+        if (size == data.length / 4 && data.length / 2 != 0) {
+            resize(data.length / 2);
+        }
         return ret;
     }
 
@@ -234,7 +218,7 @@ public class DynamicArray {
      * @author gaohao
      * @date 2019/10/31 18:25
      */
-    public int removeFirst() {
+    public E removeFirst() {
         return remove(0);
     }
 
@@ -246,19 +230,19 @@ public class DynamicArray {
      * @author gaohao
      * @date 2019/10/31 18:34
      */
-    public int removeLast() {
+    public E removeLast() {
         return remove(size - 1);
     }
 
     /**
      * 从数组中删除元素e
      *
-     * @param
+     * @param e 删除元素
      * @return
      * @author gaohao
      * @date 2019/10/31 18:38
      */
-    public boolean removeElement(int e) {
+    public boolean removeElement(E e) {
         int index = findIndex(e);
         if (index != -1) {
             remove(index);
@@ -266,8 +250,6 @@ public class DynamicArray {
         }
         return false;
     }
-
-    public boolean removeAllElement(int e) {}
 
     @Override
     public String toString() {
@@ -284,27 +266,33 @@ public class DynamicArray {
         return res.toString();
     }
 
-    public static void main(String[] args) {
-        DynamicArray arr = new DynamicArray(20);
-        for (int i = 0; i < 20; i++) {
-            arr.addLast(i);
+    /**
+     * 校验索引合法性
+     *
+     * @param
+     * @return
+     * @author gaohao
+     * @date 2019/11/1 16:05
+     */
+    private void verify(int index) {
+        if (index < 0 || index >= size) {
+            throw new IllegalArgumentException("数组下标非法");
         }
-//        System.out.println(arr);
-//        arr.add(1, 100);
-//        System.out.println(arr);
-//        arr.addFirst(-1);
-//        System.out.println(arr);
-//        System.out.println(arr.get(1));
-//        arr.set(1, 1);
-//        System.out.println(arr.get(1));
-//        System.out.println(arr);
-//        arr.remove(11);
-//        System.out.println(arr);
-//        arr.remove(0);
-//        System.out.println(arr);
-//        arr.remove(5);
-//        System.out.println(arr);
-        arr.remove(20);
-        System.out.println(arr);
+    }
+
+    /**
+     * 数组扩容或缩容
+     *
+     * @param newCapacity 容量
+     * @return
+     * @author gaohao
+     * @date 2019/11/1 15:55
+     */
+    private void resize(int newCapacity) {
+        E[] newData = (E[]) new Object[newCapacity];
+        for (int i = 0; i < size; i++) {
+            newData[i] = data[i];
+        }
+        data = newData;
     }
 }
